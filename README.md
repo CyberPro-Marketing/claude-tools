@@ -1,5 +1,8 @@
 # claude-tools
 
+> Working on this repo? Read [`CLAUDE.md`](CLAUDE.md) first: the setup, the
+> process for adding a tool, and what the cloud container allows.
+
 Tools every Claude Code cloud session installs when it starts, whatever
 project it opens. A cloud container is wiped when its session ends, so
 anything installed by hand is gone next time. This repo is the one place that
