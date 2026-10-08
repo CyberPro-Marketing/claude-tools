@@ -64,6 +64,14 @@ The first voice line downloads 27 MB of voice data, the first transcription
 downloads the `small.en` model, and the first music clip downloads 2.3 GB of
 weights, each once per session.
 
+### remotion
+
+[Remotion](https://www.remotion.dev)'s official Claude Code plugin: skills for
+building videos and stills in React and rendering them. Remotion itself is
+added per project by `npx create-video`. About 4 seconds at session start.
+**Licence:** free for individuals and companies of up to 3 employees; larger
+for-profit companies need a Remotion company licence.
+
 ## Adding a tool
 
 1. Add `tools/<name>.sh`. Make it safe to run twice: check before you

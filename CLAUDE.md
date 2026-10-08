@@ -78,6 +78,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 | Tool | What it gives every session | Startup cost (fresh container) |
 |---|---|---|
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
+| **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
 
 Downloads that happen on **first use** in a session, not at startup: 27 MB of
 Kokoro voice data, whisper's `small.en` model, and 2.3 GB of MusicGen weights.
@@ -86,6 +87,18 @@ Measured end to end on 2026-10-06:
 - A 10-second 1080p render took 14 s.
 - A Kokoro voice line transcribed back by whisper came out word for word.
 - MusicGen produced a 5-second clip in 45 s.
+- Remotion (2026-10-08): `npx create-video --yes --hello-world` scaffolded a
+  project; it rendered a 5-second 1080p H.264 MP4 in 14 s and a PNG still.
+  Passing `--browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`
+  to `npx remotion render` reuses the preinstalled browser instead of the
+  236 MB download; it worked, and is optional.
+
+**Remotion's licence is Adam's call, not a technical one.** It is free for
+individuals, non-profits and for-profit companies of **up to 3 employees**;
+a larger for-profit company using it commercially needs a paid company
+licence (remotion.pro/license). HyperFrames (Apache 2.0) has no such limit and
+covers most of the same ground. If the business a video is for has more than
+three employees, check before rendering client work with Remotion.
 
 **Not yet observed:** a real setup-script run in a brand-new session. The
 script was tested from scratch inside a session, and the exact `curl` line was
