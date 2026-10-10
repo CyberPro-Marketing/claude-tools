@@ -79,6 +79,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 |---|---|---|
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
+| **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) and **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 
 Downloads that happen on **first use** in a session, not at startup: 27 MB of
 Kokoro voice data, whisper's `small.en` model, and 2.3 GB of MusicGen weights.
@@ -92,6 +93,22 @@ Measured end to end on 2026-10-06:
   Passing `--browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`
   to `npx remotion render` reuses the preinstalled browser instead of the
   236 MB download; it worked, and is optional.
+
+- Web design tools (2026-10-10), each called over MCP with real requests:
+  Playwright opened adambossin.com and returned a correct screenshot; Chrome
+  DevTools ran a mobile Lighthouse audit of it (Accessibility 96, Best
+  Practices 96, SEO 100); shadcn searched its registry ("dialog": 9 items) and
+  returned the button component's details. `claude mcp list` shows all three
+  connected after a from-scratch install.
+
+**Context7 is waiting on a free API key.** It is in the same official
+directory and gives Claude current docs for Next.js, React and Tailwind. On
+2026-10-10 its hosted server answered 401 "Authentication required" and the
+local `@upstash/context7-mcp` answered "Monthly quota exceeded. Create a free
+API key at https://context7.com/dashboard". Once Adam has a key, test adding
+it under the environment's **API credentials** for the host
+`mcp.context7.com` (the proxy then injects it, and the key never touches
+this repo), then install the `context7@claude-plugins-official` plugin here.
 
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
@@ -173,6 +190,13 @@ Things learned by being refused, so the next tool does not rediscover them:
 - **Chromium is preinstalled** at `/opt/pw-browsers/`, including a headless
   shell. Point tools at it rather than letting them download their own. Never
   run `playwright install`.
+- **There is no Google Chrome**, and tools that use the "chrome" channel
+  (Playwright MCP, Chrome DevTools MCP, Puppeteer's default) look for it at
+  `/opt/google/chrome/chrome`. `tools/web-design.sh` puts a launcher there that
+  runs the preinstalled Chromium.
+- **Sessions run as root, where Chromium refuses its sandbox** ("To avoid the
+  sandboxing issue…", or "Target closed" from Puppeteer). The launcher adds
+  `--no-sandbox`, and `--headless=new` when there is no display.
 - **Already present:** Node 22, Python 3.13, ffmpeg/ffprobe, git, cmake, gcc,
   Docker (installed, not running), the `claude` CLI.
 - **The Claude GitHub app cannot create repositories** (403 "Resource not

@@ -72,6 +72,15 @@ added per project by `npx create-video`. About 4 seconds at session start.
 **Licence:** free for individuals and companies of up to 3 employees; larger
 for-profit companies need a Remotion company licence.
 
+### web-design
+
+Tools for building websites. From Anthropic's official plugin directory:
+**frontend-design**, **modern-web-guidance**, **Playwright** and **Chrome
+DevTools**; plus the **shadcn/ui** component MCP. Claude can design with
+intent, check its pages in a real browser, screenshot them, run Lighthouse
+audits and pull in polished components. About 12 seconds at session start.
+Context7 (current library docs) will join once there is a free API key.
+
 ## Adding a tool
 
 1. Add `tools/<name>.sh`. Make it safe to run twice: check before you
