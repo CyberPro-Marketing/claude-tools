@@ -79,7 +79,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 |---|---|---|
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
-| **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) and **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
+| **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 
 Downloads that happen on **first use** in a session, not at startup: 27 MB of
 Kokoro voice data, whisper's `small.en` model, and 2.3 GB of MusicGen weights.
@@ -101,14 +101,17 @@ Measured end to end on 2026-10-06:
   returned the button component's details. `claude mcp list` shows all three
   connected after a from-scratch install.
 
-**Context7 is waiting on a free API key.** It is in the same official
-directory and gives Claude current docs for Next.js, React and Tailwind. On
-2026-10-10 its hosted server answered 401 "Authentication required" and the
-local `@upstash/context7-mcp` answered "Monthly quota exceeded. Create a free
-API key at https://context7.com/dashboard". Once Adam has a key, test adding
-it under the environment's **API credentials** for the host
-`mcp.context7.com` (the proxy then injects it, and the key never touches
-this repo), then install the `context7@claude-plugins-official` plugin here.
+**Context7** (added 2026-10-10) gives Claude current docs for Next.js, React,
+Tailwind and thousands of libraries. Its hosted server needs an API key, and
+the key lives in the Default environment's **Network secrets** (Edit → Network
+secrets → Add secret): name `Context7`, type Bearer, allowed website
+`mcp.context7.com`, header `Authorization` with prefix `Bearer`. The proxy
+injects it on every request to that host, so the key never touches this repo
+or the chat. Verified: the endpoint answered 200 instead of 401, a real
+`resolve-library-id` lookup for Next.js returned `/vercel/next.js` with its
+versions, and `claude mcp list` shows the plugin connected. Without the secret
+(another environment, say) the plugin shows "Needs authentication" and nothing
+else breaks.
 
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
@@ -166,8 +169,8 @@ setup script is the first true run. Note here when one has been confirmed.
   to by whatever variable the tool reads. The system Python refuses
   `pip install` (PEP 668), and a venv keeps tools from breaking each other.
 - **No secrets, ever.** This repo is public. That is what lets the setup line
-  download it with no token. An API key belongs in the environment's **API
-  credentials** or **Environment variables** box, never in a script here. A
+  download it with no token. An API key belongs in the environment's **Network
+  secrets** (formerly "API credentials") or **Environment variables** box, never in a script here. A
   tool that needs a key should check for it and say plainly that it is
   missing, rather than fail.
 - **Mind startup time.** Every second here is paid at the start of every

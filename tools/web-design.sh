@@ -6,20 +6,20 @@
 #   - playwright           Microsoft's browser MCP: open pages, click, screenshot
 #   - chrome-devtools-mcp  Google's browser MCP: Lighthouse, performance traces,
 #                          network and console inspection
+#   - context7             Upstash's current docs for Next.js, React, Tailwind
+#                          and thousands of libraries. Its hosted server needs
+#                          an API key: the environment's Network secrets inject
+#                          it for mcp.context7.com, so it never touches this repo
 #   Plus:
 #   - shadcn               the shadcn/ui MCP: search and add components from the
 #                          shadcn registry
 #   - a Chrome launcher at /opt/google/chrome/chrome, because both browser MCPs
 #     look for Google Chrome there and this container only has Playwright's
 #     Chromium. Without it both fail with "Chrome not found".
-#
-# Context7 (up-to-date library docs) is deliberately not here yet: its hosted
-# server now requires an account and its anonymous quota was exhausted when
-# tested on 2026-10-10. It goes in once Adam has a free API key.
 set -euo pipefail
 
 MARKET=claude-plugins-official
-PLUGINS=(frontend-design modern-web-guidance playwright chrome-devtools-mcp)
+PLUGINS=(frontend-design modern-web-guidance playwright chrome-devtools-mcp context7)
 log() { printf '[web-design-setup] %s\n' "$*"; }
 
 # 1. The Chrome launcher. Only written when no real Chrome is there, so a

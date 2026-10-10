@@ -75,11 +75,12 @@ for-profit companies need a Remotion company licence.
 ### web-design
 
 Tools for building websites. From Anthropic's official plugin directory:
-**frontend-design**, **modern-web-guidance**, **Playwright** and **Chrome
-DevTools**; plus the **shadcn/ui** component MCP. Claude can design with
+**frontend-design**, **modern-web-guidance**, **Playwright**, **Chrome
+DevTools** and **Context7**; plus the **shadcn/ui** component MCP. Claude can design with
 intent, check its pages in a real browser, screenshot them, run Lighthouse
 audits and pull in polished components. About 12 seconds at session start.
-Context7 (current library docs) will join once there is a free API key.
+Context7 needs its API key saved as a network secret for `mcp.context7.com`
+in the environment's settings; see CLAUDE.md.
 
 ## Adding a tool
 
