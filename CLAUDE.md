@@ -113,6 +113,13 @@ versions, and `claude mcp list` shows the plugin connected. Without the secret
 (another environment, say) the plugin shows "Needs authentication" and nothing
 else breaks.
 
+**Known startup glitch (seen 2026-10-13 and 2026-10-21):** when a session
+starts, Claude Code sometimes marks Context7 "requires authentication", and its
+tools are then missing from that session. Minutes later the endpoint answers
+200 and `claude mcp list` shows it connected, so the key is fine; the check at
+launch seems to run before the secret is applied. Fix in the session: `/mcp` →
+Context7 → reconnect. The website warm-up prompt asks Claude to flag this.
+
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
 a larger for-profit company using it commercially needs a paid company
