@@ -127,6 +127,17 @@ setup script is the first true run. Note here when one has been confirmed.
 
 ---
 
+## Prompts
+
+`prompts/` holds the prompts Adam pastes into sessions: `website-warmup.md`
+(first message of a website session) and `website-template.md` (the design
+brief). `setup.sh` never runs anything there. **When a tool is added or removed,
+update the tool list in `website-warmup.md` and the HOW TO WORK line in
+`website-template.md`**, or the warm-up will report a missing tool that was
+removed on purpose, or never ask for a new one.
+
+---
+
 ## Adding a tool: the process
 
 1. **Read the tool's own install docs from its source**, not its marketing.

@@ -82,6 +82,12 @@ audits and pull in polished components. About 12 seconds at session start.
 Context7 needs its API key saved as a network secret for `mcp.context7.com`
 in the environment's settings; see CLAUDE.md.
 
+## Prompts
+
+`prompts/` holds ready-to-paste prompts for using these tools. For a website:
+paste [`prompts/website-warmup.md`](prompts/website-warmup.md) first, then the
+filled-in [`prompts/website-template.md`](prompts/website-template.md).
+
 ## Adding a tool
 
 1. Add `tools/<name>.sh`. Make it safe to run twice: check before you
