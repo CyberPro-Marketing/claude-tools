@@ -82,6 +82,16 @@ audits and pull in polished components. About 12 seconds at session start.
 Context7 needs its API key saved as a network secret for `mcp.context7.com`
 in the environment's settings; see CLAUDE.md.
 
+### rea
+
+[REA](https://github.com/morluto/rea) ("Reverse Engineer Anything"): lets
+Claude take apart software it has no source for, such as websites,
+JavaScript/Electron apps and many file formats, with evidence for each finding.
+About 1 second at session start; REA downloads when first used.
+
+**Compiled programs need Ghidra**, which is too big for every session. Ask
+Claude to "set up Ghidra" in the session that needs it (about 35 seconds).
+
 ## Prompts
 
 `prompts/` holds ready-to-paste prompts for using these tools. For a website:

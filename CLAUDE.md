@@ -78,6 +78,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 | Tool | What it gives every session | Startup cost (fresh container) |
 |---|---|---|
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
+| **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
 | **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 
@@ -120,6 +121,29 @@ tools are then missing from that session. Minutes later the endpoint answers
 launch seems to run before the secret is applied. Fix in the session: `/mcp` →
 Context7 → reconnect. The website warm-up prompt asks Claude to flag this.
 
+- REA (2026-10-22): inspected adambossin.com through a live Chromium (32
+  scripts, 19 resources, DOM and storage, with cookies and values withheld by
+  design); analysed the site's Next.js page bundle as a JavaScript app (4
+  modules, 14 findings); with Ghidra, mapped `/usr/bin/true` (133 functions,
+  122 strings, 26 s) and decompiled its entry point to C-like code. `claude mcp
+  list` connects REA even from a cold npm cache (27 s).
+
+**Ghidra is on demand, not in every session** (Adam's choice, 2026-10-22). It
+is ~840 MB unpacked, and most sessions never decompile anything.
+`on-demand/ghidra.sh` installs it in one session in ~35 s; the `ghidra-setup`
+skill tells Claude to run it with
+`curl -fsSL https://raw.githubusercontent.com/CyberPro-Marketing/claude-tools/main/on-demand/ghidra.sh | bash`.
+It installs to `/opt/ghidra` and links `/usr/local/bin/ghidraRun`, where REA
+finds it without `GHIDRA_INSTALL_DIR`. The source is **Kali Linux's package
+archive**, because GitHub release downloads are blocked here (see below); the
+`.deb` is checked against the SHA-256 in Kali's index and only its files are
+used. REA supports Ghidra **12.1.x only**: when Kali moves past 12.1, the
+script refuses with a clear message, and the fix is to check REA's docs and
+update `WANT` in the script together with `REA_VERSION` in `tools/rea.sh`.
+
+**REA's version is pinned on purpose.** It publishes several releases a day.
+To update: bump `REA_VERSION` in `tools/rea.sh`, rerun the tests above, push.
+
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
 a larger for-profit company using it commercially needs a paid company
@@ -131,6 +155,14 @@ three employees, check before rendering client work with Remotion.
 script was tested from scratch inside a session, and the exact `curl` line was
 run against the live repo, but the first new session after Adam saved the
 setup script is the first true run. Note here when one has been confirmed.
+
+---
+
+## On-demand tools
+
+`on-demand/` holds installers that are too big for every session start.
+`setup.sh` never runs them; a skill installed by a `tools/` script tells
+Claude when and how. Currently: `ghidra.sh` (via the `ghidra-setup` skill).
 
 ---
 
@@ -218,6 +250,10 @@ Things learned by being refused, so the next tool does not rediscover them:
 - **Sessions run as root, where Chromium refuses its sandbox** ("To avoid the
   sandboxing issue…", or "Target closed" from Puppeteer). The launcher adds
   `--no-sandbox`, and `--headless=new` when there is no display.
+- **GitHub release downloads and web pages are blocked** for repos not attached
+  to the session (403 from the proxy; `add_repo` grants git reads only). Find
+  another published source for prebuilt binaries, as `on-demand/ghidra.sh` does.
+- **Java 21 (OpenJDK) is already installed.**
 - **Already present:** Node 22, Python 3.13, ffmpeg/ffprobe, git, cmake, gcc,
   Docker (installed, not running), the `claude` CLI.
 - **The Claude GitHub app cannot create repositories** (403 "Resource not
