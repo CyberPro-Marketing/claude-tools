@@ -10,7 +10,9 @@ Before we start, get set up for a website design job. Don't build anything yet.
 1. Check the tools are here: run `claude plugin list` and `claude mcp list`.
    I expect these plugins: frontend-design, modern-web-guidance, playwright,
    chrome-devtools-mcp, context7, gsap-skills, hyperframes and remotion, plus
-   the shadcn, 21st and magicui MCP servers connected, and the 21st-ui skill.
+   the shadcn and magicui MCP servers connected, and the 21st-ui skill. The 21st
+   Dev connector comes from my Claude account, so it isn't in `claude mcp list`:
+   check that its tools (mcp__21st_Dev__search and others) are available.
    mux and fal may say "Needs authentication"; that's fine unless this job
    needs them. If any are missing or not connected, tell me which and why.
    If Context7 isn't connected, tell me so I can reconnect it with /mcp.

@@ -86,12 +86,11 @@ in the environment's settings; see CLAUDE.md.
 
 The high-end layer on top of web-design, for client sites with motion and
 video. **GSAP**'s official skills (ScrollTrigger, SplitText, timelines, React;
-GSAP is free for commercial use), the **21st.dev** MCP and its `21st-ui` skill
-(10,000+ React/Tailwind components, AI UI generation), the **Magic UI** MCP
+GSAP is free for commercial use), 21st.dev's `21st-ui` skill (the 21st.dev MCP
+itself is a claude.ai connector, so it needs nothing here), the **Magic UI** MCP
 (animated backgrounds, marquees, text effects), and the hosted **Mux** (video
 streaming) and **fal.ai** (image, video and 3D models) MCPs. About 4 seconds
-at session start. 21st needs an API key and Mux a token, both saved in the
-environment's settings; fal signs in through `/mcp` when first used. See
+at session start. Mux needs a token saved in the environment's settings; fal signs in through `/mcp` when first used. See
 CLAUDE.md.
 
 ### rea

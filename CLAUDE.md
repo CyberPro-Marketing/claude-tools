@@ -81,7 +81,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 | **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
 | **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
-| **web-premium** (`tools/web-premium.sh`) | The high-end layer for client sites. **gsap-skills** plugin (GreenSock's 8 official skills: core, timeline, ScrollTrigger, plugins, utils, React, performance, frameworks; GSAP and every plugin are free for commercial use). **21st** MCP (21st.dev's component catalog, logos, AI UI generation) through 21st's own stdio proxy, pinned `@21st-dev/magic@0.2.3`, plus its `21st-ui` skill pinned to commit `6b5299e`. **magicui** MCP (Magic UI's animated components). Hosted **mux** MCP (video upload and streaming) and **fal** MCP (image, video and 3D models, pay per run) | ~4 s fresh, ~2 s repeat, measured 2026-10-24 |
+| **web-premium** (`tools/web-premium.sh`) | The high-end layer for client sites. **gsap-skills** plugin (GreenSock's 8 official skills: core, timeline, ScrollTrigger, plugins, utils, React, performance, frameworks; GSAP and every plugin are free for commercial use). 21st.dev's `21st-ui` skill pinned to commit `6b5299e` (the 21st MCP itself is Adam's claude.ai connector, "21st Dev"). **magicui** MCP (Magic UI's animated components). Hosted **mux** MCP (video upload and streaming) and **fal** MCP (image, video and 3D models, pay per run) | ~4 s fresh, ~2 s repeat, measured 2026-10-24 |
 
 Downloads that happen on **first use** in a session, not at startup: 27 MB of
 Kokoro voice data, whisper's `small.en` model, and 2.3 GB of MusicGen weights.
@@ -124,17 +124,20 @@ Context7 → reconnect. The website warm-up prompt asks Claude to flag this.
 
 **web-premium keys and sign-ins** (added 2026-10-24):
 
-- **21st.dev** needs a key from <https://21st.dev/mcp>. 21st replaced its old
-  Magic MCP and **reset every old Magic key**, so a key from before then no
-  longer works; generate a new one. Free tier: catalog search and 2 component
-  installs a day; `generate` (AI UI) only appears when the account has AI
-  access. Save it in the Default environment either as a **Network secret**
-  (name `21st`, type Bearer, allowed website `21st.dev`, header `Authorization`,
-  prefix `Bearer`; the key never reaches the session) or as the environment
-  variable `API_KEY_21ST=<key>`, which the proxy reads. The 21st server told
-  us both forms are accepted ("x-api-key / Bearer"). Without a key,
-  `claude mcp list` shows 21st failing with "Not authenticated ... Get a fresh
-  key", and nothing else breaks.
+- **21st.dev** is Adam's **claude.ai connector** "21st Dev" (Settings →
+  Connectors → custom connector, URL `https://21st.dev/api/mcp`, signed in with
+  his 21st account; added 2026-10-24). Connectors follow his Claude account, so
+  it appears in claude.ai chats and in every Claude Code cloud session by
+  itself, as `mcp__21st_Dev__*` tools, with no key in any environment.
+  `claude mcp list` does not show claude.ai connectors; check for the tools
+  instead (the prompts say so).
+  Verified 2026-10-24: it appeared in a running cloud session within a minute,
+  and a live `search` for "video background hero" returned real components.
+  His account has AI generation (`generate`, `iterate_generation`) and 21st's
+  video tools. This repo only adds the `21st-ui` skill. An earlier version of
+  this script also registered a key-based `21st` server; it now removes that
+  entry, so there is one 21st server, not two. (Background: 21st replaced its
+  old Magic MCP and reset every old Magic key.)
 - **Mux** needs an access token (a token ID and secret, made in the Mux dashboard).
   Save a Network secret for `mcp.mux.com`, header `Authorization`, value
   `Basic <base64 of TOKEN_ID:TOKEN_SECRET>` (Mux's documented non-OAuth form).
@@ -147,9 +150,8 @@ Context7 → reconnect. The website warm-up prompt asks Claude to flag this.
 
 Tested 2026-10-24: from-scratch setup run twice (4 s, then 2 s); the
 gsap-skills plugin installs all 8 skills; Magic UI connects and a real
-`searchRegistryItems` for "marquee" returned 5 components; 21st's proxy reached
-21st.dev and answered with its "not authenticated" error (no key yet); Mux and
-fal show "Needs authentication".
+`searchRegistryItems` for "marquee" returned 5 components; Mux and fal show
+"Needs authentication".
 
 **Tried and left out:** `mcp-server-lottiefiles` (community) connects, but
 every search returns 404 from LottieFiles' API, so it is broken upstream.

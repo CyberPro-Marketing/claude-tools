@@ -35,10 +35,13 @@ THE STANDARD
 SET UP
 1. Run `claude plugin list` and `claude mcp list`. I expect plugins
    frontend-design, modern-web-guidance, playwright, chrome-devtools-mcp,
-   context7, gsap-skills, hyperframes and remotion; MCP servers shadcn, 21st and
-   magicui connected; and the 21st-ui skill. mux and fal may say "Needs
-   authentication"; tell me only if this job needs them. If Context7 or 21st
-   isn't connected, tell me so I can fix it with /mcp or the environment's key.
+   context7, gsap-skills, hyperframes and remotion; MCP servers shadcn and magicui
+   connected; and the 21st-ui skill. The 21st Dev connector comes from my Claude
+   account, so it isn't in `claude mcp list`: check that its tools
+   (mcp__21st_Dev__search and others) are available. mux and fal may say "Needs
+   authentication"; tell me only if this job needs them. If Context7 or 21st Dev
+   isn't connected, tell me so I can fix it with /mcp or claude.ai's connector
+   settings.
 2. Load the frontend-design, modern-web-guidance, gsap-skills and 21st-ui
    skills now.
 3. Look at this repo: empty, or an existing site? If existing, tell me the
