@@ -82,6 +82,18 @@ audits and pull in polished components. About 12 seconds at session start.
 Context7 needs its API key saved as a network secret for `mcp.context7.com`
 in the environment's settings; see CLAUDE.md.
 
+### web-premium
+
+The high-end layer on top of web-design, for client sites with motion and
+video. **GSAP**'s official skills (ScrollTrigger, SplitText, timelines, React;
+GSAP is free for commercial use), the **21st.dev** MCP and its `21st-ui` skill
+(10,000+ React/Tailwind components, AI UI generation), the **Magic UI** MCP
+(animated backgrounds, marquees, text effects), and the hosted **Mux** (video
+streaming) and **fal.ai** (image, video and 3D models) MCPs. About 4 seconds
+at session start. 21st needs an API key and Mux a token, both saved in the
+environment's settings; fal signs in through `/mcp` when first used. See
+CLAUDE.md.
+
 ### rea
 
 [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything"): lets
@@ -95,8 +107,9 @@ Claude to "set up Ghidra" in the session that needs it (about 35 seconds).
 ## Prompts
 
 `prompts/` holds ready-to-paste prompts for using these tools. For a website:
-paste [`prompts/website-warmup.md`](prompts/website-warmup.md) first, then the
-filled-in [`prompts/website-template.md`](prompts/website-template.md).
+paste [`prompts/website-premium.md`](prompts/website-premium.md) (a high-end
+client site) or [`prompts/website-warmup.md`](prompts/website-warmup.md) first,
+then the filled-in [`prompts/website-template.md`](prompts/website-template.md).
 
 ## Adding a tool
 

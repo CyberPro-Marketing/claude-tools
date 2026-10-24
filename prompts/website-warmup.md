@@ -9,12 +9,14 @@ Before we start, get set up for a website design job. Don't build anything yet.
 
 1. Check the tools are here: run `claude plugin list` and `claude mcp list`.
    I expect these plugins: frontend-design, modern-web-guidance, playwright,
-   chrome-devtools-mcp, context7, hyperframes and remotion, plus the shadcn MCP
-   server connected. If any are missing or not connected, tell me which and why.
+   chrome-devtools-mcp, context7, gsap-skills, hyperframes and remotion, plus
+   the shadcn, 21st and magicui MCP servers connected, and the 21st-ui skill.
+   mux and fal may say "Needs authentication"; that's fine unless this job
+   needs them. If any are missing or not connected, tell me which and why.
    If Context7 isn't connected, tell me so I can reconnect it with /mcp.
 
-2. Load the frontend-design and modern-web-guidance skills now, so they shape
-   the work from the start.
+2. Load the frontend-design, modern-web-guidance, gsap-skills and 21st-ui
+   skills now, so they shape the work from the start.
 
 3. Look at this repo: is it empty or an existing site? If it's existing, tell me
    the stack, the pages, and anything that would affect a redesign.
@@ -24,9 +26,13 @@ Before we start, get set up for a website design job. Don't build anything yet.
 
 How to work on this job:
 - frontend-design for the design direction (not a generic template look).
-- shadcn/ui for components.
+- shadcn/ui, 21st.dev and Magic UI for components; animated ones from 21st
+  and Magic UI where they lift the design.
+- GSAP (ScrollTrigger, SplitText) for scroll and entrance motion, with
+  prefers-reduced-motion respected.
 - Context7 for current Next.js, React and Tailwind docs.
-- /hyperframes for any hero videos, loops or promo clips.
+- /hyperframes for any hero videos, loops or promo clips; fal for AI video or
+  images if I've signed it in; Mux to host heavy video.
 - Playwright screenshots at phone and desktop sizes, and a Chrome DevTools
   Lighthouse audit, on every page before you show me anything.
 - Show me the design direction before building every page.
