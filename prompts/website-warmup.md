@@ -13,6 +13,7 @@ Before we start, get set up for a website design job. Don't build anything yet.
    the shadcn and magicui MCP servers connected, and the 21st-ui skill. The 21st
    Dev connector comes from my Claude account, so it isn't in `claude mcp list`:
    check that its tools (mcp__21st_Dev__search and others) are available.
+   Do the same for the Figma connector (mcp__Figma__* tools).
    mux and fal may say "Needs authentication"; that's fine unless this job
    needs them. If any are missing or not connected, tell me which and why.
    If Context7 isn't connected, tell me so I can reconnect it with /mcp.
@@ -33,6 +34,8 @@ How to work on this job:
 - GSAP (ScrollTrigger, SplitText) for scroll and entrance motion, with
   prefers-reduced-motion respected.
 - Context7 for current Next.js, React and Tailwind docs.
+- Figma: if I share a figma.com link, read the design with the Figma connector
+  and build from it. My Figma seat is view-only, so read, don't edit.
 - /hyperframes for any hero videos, loops or promo clips; fal for AI video or
   images if I've signed it in; Mux to host heavy video.
 - Playwright screenshots at phone and desktop sizes, and a Chrome DevTools

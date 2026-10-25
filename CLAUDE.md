@@ -196,6 +196,31 @@ setup script is the first true run. Note here when one has been confirmed.
 
 ---
 
+## claude.ai connectors
+
+These are not installed by this repo. Adam adds them in claude.ai (Settings →
+Connectors) and they follow his Claude account into every session, cloud ones
+included, as `mcp__<Name>__*` tools. `claude mcp list` does not show them;
+check for their tools instead. Nothing here needs to change when one is added,
+except this table and, if it matters for websites, the prompts.
+
+Checked 2026-10-25 with one read-only call each:
+
+| Connector | What it is for | Account state when checked |
+|---|---|---|
+| **21st Dev** | Premium and animated components; AI component generation; video blocks | Paid tier, AI generation on, 100 credits a month (reset 2026-11-01). Details under web-premium above |
+| **Figma** | Read designs into code; push pages into Figma | Signed in as Adam Bossin, Starter plan, **View seat**: reading designs works, creating or editing in Figma likely needs a paid editor seat |
+| **Higgsfield** (Katana) | AI image, video, 3D, ads, AI influencers, a website builder | **Free plan, 3 credits**: about one generation |
+| **Descript** | Edit video and audio by editing the transcript; captions; exports | Connected to "Adam Bossin's Drive" |
+| **TinyFish** | Web automation, deep research, site monitoring | Wallet $8.20, pay per use (deep research $2–3 a run; search and fetch free) |
+| **HyperFrames by HeyGen** (hosted) | HeyGen's cloud HyperFrames projects and renders | Connected, no projects. Its `compose` and `render_video` refuse Claude Code by design; in Claude Code use the local `hyperframes` plugin from `tools/hyperframes.sh` |
+| **Webflow** | Build and manage Webflow sites | Connected, not exercised: Adam's sites are Next.js |
+
+Spending connectors (Higgsfield, TinyFish, 21st AI credits) cost money or
+credits per use; say what a run will cost before starting one.
+
+---
+
 ## On-demand tools
 
 `on-demand/` holds installers that are too big for every session start.

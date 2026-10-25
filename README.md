@@ -103,6 +103,12 @@ About 1 second at session start; REA downloads when first used.
 **Compiled programs need Ghidra**, which is too big for every session. Ask
 Claude to "set up Ghidra" in the session that needs it (about 35 seconds).
 
+## claude.ai connectors
+
+Some tools come from Claude account connectors instead of this repo: 21st Dev,
+Figma, Higgsfield, Descript, TinyFish, HyperFrames by HeyGen and Webflow. They
+reach every session on their own. CLAUDE.md lists each with its plan limits.
+
 ## Prompts
 
 `prompts/` holds ready-to-paste prompts for using these tools. For a website:

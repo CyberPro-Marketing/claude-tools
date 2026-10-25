@@ -58,6 +58,8 @@ HOW TO WORK
   video-heavy sites.
 - Context7 for current Next.js, GSAP and Tailwind docs before writing code
   against them.
+- Figma: if I share a figma.com link, read the design with the Figma connector
+  and build from it. My Figma seat is view-only, so read, don't edit.
 - Before showing me anything: Playwright screenshots at phone (390 px) and
   desktop (1440 px), a Chrome DevTools Lighthouse audit on mobile, and a check
   that the animations run smoothly and switch off with reduced motion.

@@ -61,7 +61,8 @@ Add proper titles, descriptions, social share images, a sitemap and structured d
 HOW TO WORK
 Use the frontend-design skill for the design direction; shadcn/ui, 21st.dev and
 Magic UI for components; GSAP for scroll and entrance motion; Context7 for current
-Next.js docs; /hyperframes (or fal, if signed in) for hero video. Check every page
+Next.js docs; the Figma connector for any figma.com links I give you; /hyperframes
+(or fal, if signed in) for hero video. Check every page
 with Playwright screenshots and a Chrome DevTools Lighthouse audit before showing me.
 Show me the design direction (colours, type, hero mock-up) before building every
 page. Don't invent facts, dates, prices or quotes; use marked placeholders and give
