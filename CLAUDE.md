@@ -192,9 +192,12 @@ To update: bump `REA_VERSION` in `tools/rea.sh`, rerun the tests above, push.
   that and are **not used, by policy**: they put Adam's accounts at risk and
   break those sites' terms. For his own YouTube or Instagram videos, he
   downloads the file (YouTube Studio, Instagram's data download) and uploads
-  it; `watch-video` accepts a file. Running `npx skills find` was blocked by
-  this session's auto-mode safety check (code from the internet), so expect
-  find-skills searches to ask for approval in other sessions too.
+  it; `watch-video` accepts a file. The first `npx skills find` was blocked by
+  this session's auto-mode safety check (code from the internet); a later one,
+  run when Adam asked for a search, went through and returned results (a
+  search for remote-job skills found `firecrawl/skills@firecrawl-job-postings`,
+  611 installs, which needs a paid Firecrawl key; Adam chose to hold, not
+  installed). Expect the check to ask for approval now and then.
 
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
