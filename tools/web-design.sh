@@ -33,7 +33,8 @@ if [ ! -e "$launcher" ] || grep -q 'claude-tools' "$launcher" 2>/dev/null; then
 # look for Google Chrome here. Run the container's Chromium instead, without the
 # sandbox (the container runs as root, where Chromium refuses to start with it)
 # and headless when there is no display.
-CHROMIUM=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome 2>/dev/null | tail -1)
+# chrome-linux/ in older Playwright builds, chrome-linux64/ from 1.5x on.
+CHROMIUM=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux*/chrome 2>/dev/null | tail -1)
 extra=""
 if [ -z "$DISPLAY" ]; then
   case " $* " in *" --headless"*) ;; *) extra="--headless=new" ;; esac

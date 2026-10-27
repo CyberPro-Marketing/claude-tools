@@ -52,7 +52,10 @@ log "python extras ready"
 # profile: a non-interactive shell never reads bashrc, and Claude's commands
 # always get the settings file's `env`. The plugin is enabled there too, so
 # Claude installs it at startup even if the `claude plugin` call above failed.
-chromium=$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell 2>/dev/null | tail -1 || true)
+# Older Playwright builds: chrome-linux/headless_shell. Newer ones:
+# chrome-headless-shell-linux64/chrome-headless-shell.
+chromium=$(ls -d /opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell \
+  /opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux*/chrome-headless-shell 2>/dev/null | tail -1 || true)
 VENV="$VENV" CHROMIUM="$chromium" python3 - <<'PY'
 import json, os, pathlib
 path = pathlib.Path.home() / ".claude" / "settings.json"
