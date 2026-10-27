@@ -94,7 +94,8 @@ Measured end to end on 2026-10-06:
 - MusicGen produced a 5-second clip in 45 s.
 - Remotion (2026-10-08): `npx create-video --yes --hello-world` scaffolded a
   project; it rendered a 5-second 1080p H.264 MP4 in 14 s and a PNG still.
-  Passing `--browser-executable=/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell`
+  Passing `--browser-executable=` with the container's headless shell (now
+  `/opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell`)
   to `npx remotion render` reuses the preinstalled browser instead of the
   236 MB download; it worked, and is optional.
 
@@ -323,7 +324,12 @@ Things learned by being refused, so the next tool does not rediscover them:
   skills, so it is harmless there. Check before relying on LFS content.
 - **Chromium is preinstalled** at `/opt/pw-browsers/`, including a headless
   shell. Point tools at it rather than letting them download their own. Never
-  run `playwright install`.
+  run `playwright install`. **Its folder layout changes with the image's
+  Playwright version** (seen 2026-10-27): `chromium-1194/chrome-linux/chrome`
+  became `chromium-1243/chrome-linux64/chrome`, and the headless shell moved to
+  `chrome-headless-shell-linux64/chrome-headless-shell`. Glob for both layouts,
+  never one path; a stale path broke Chrome DevTools MCP and HyperFrames'
+  browser in every session until it was fixed.
 - **There is no Google Chrome**, and tools that use the "chrome" channel
   (Playwright MCP, Chrome DevTools MCP, Puppeteer's default) look for it at
   `/opt/google/chrome/chrome`. `tools/web-design.sh` puts a launcher there that
