@@ -77,9 +77,11 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 
 | Tool | What it gives every session | Startup cost (fresh container) |
 |---|---|---|
+| **find-skills** (`tools/find-skills.sh`) | Vercel's [find-skills](https://github.com/vercel-labs/skills) skill (MIT, 4.1M installs on skills.sh), pinned to commit `533c7df`: when Adam asks "is there a skill for X", Claude searches skills.sh with `npx skills find`, checks installs, source and stars, and recommends. One local rule is appended to it: recommend freely, **ask before installing**, and send lasting additions through this repo | ~1 s fresh, 0 s repeat, measured 2026-10-27 |
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
 | **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
+| **video-watch** (`tools/video-watch.sh`) | Lets Claude watch a video. [yt-dlp](https://github.com/yt-dlp/yt-dlp) (public domain) in `/opt/yt-dlp-venv`, linked at `/usr/local/bin/yt-dlp`, set to `--js-runtimes node`, upgraded when its release is over 14 days old (not pinned: sites change and old releases stop working). `/usr/local/bin/watch-video <link or file> [folder]` downloads (720p max), transcribes with whisper-cli and takes 12 frames plus a contact sheet. A `watch-video` skill says when to use it and its limits | ~13 s fresh, ~1 s repeat, measured 2026-10-27 |
 | **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 | **web-premium** (`tools/web-premium.sh`) | The high-end layer for client sites. **gsap-skills** plugin (GreenSock's 8 official skills: core, timeline, ScrollTrigger, plugins, utils, React, performance, frameworks; GSAP and every plugin are free for commercial use). 21st.dev's `21st-ui` skill pinned to commit `6b5299e` (the 21st MCP itself is Adam's claude.ai connector, "21st Dev"). **magicui** MCP (Magic UI's animated components). Hosted **mux** MCP (video upload and streaming) and **fal** MCP (image, video and 3D models, pay per run) | ~4 s fresh, ~2 s repeat, measured 2026-10-24 |
 
@@ -181,6 +183,18 @@ update `WANT` in the script together with `REA_VERSION` in `tools/rea.sh`.
 
 **REA's version is pinned on purpose.** It publishes several releases a day.
 To update: bump `REA_VERSION` in `tools/rea.sh`, rerun the tests above, push.
+
+- find-skills and video-watch (2026-10-27): `watch-video` on a public Facebook
+  reel (54 s) gave a correct transcript, 12 frames and a contact sheet in
+  40 s. yt-dlp from a cloud session: **Facebook and Archive.org work; YouTube**
+  ("Sign in to confirm you're not a bot", HTTP 429), **Vimeo** (login
+  required), **Instagram and TikTok refuse**. Logged-in cookies would get past
+  that and are **not used, by policy**: they put Adam's accounts at risk and
+  break those sites' terms. For his own YouTube or Instagram videos, he
+  downloads the file (YouTube Studio, Instagram's data download) and uploads
+  it; `watch-video` accepts a file. Running `npx skills find` was blocked by
+  this session's auto-mode safety check (code from the internet), so expect
+  find-skills searches to ask for approval in other sessions too.
 
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;

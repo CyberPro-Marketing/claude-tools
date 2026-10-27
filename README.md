@@ -103,6 +103,19 @@ About 1 second at session start; REA downloads when first used.
 **Compiled programs need Ghidra**, which is too big for every session. Ask
 Claude to "set up Ghidra" in the session that needs it (about 35 seconds).
 
+### find-skills
+
+Vercel's skill finder: ask "is there a skill for X" and Claude searches the
+skills.sh directory, checks quality, and recommends. It asks before installing
+anything; tools you want in every session still come through this repo.
+
+### video-watch
+
+Claude can watch a video: `watch-video <link or file>` downloads it,
+transcribes it and pulls frames to look at. Facebook and Archive.org links work
+from cloud sessions; YouTube, Instagram, TikTok and Vimeo refuse them, so
+upload those files instead.
+
 ## claude.ai connectors
 
 Some tools come from Claude account connectors instead of this repo: 21st Dev,
