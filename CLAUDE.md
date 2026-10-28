@@ -233,9 +233,33 @@ Checked 2026-10-25 with one read-only call each:
 | **TinyFish** | Web automation, deep research, site monitoring | Wallet $8.20, pay per use (deep research $2–3 a run; search and fetch free) |
 | **HyperFrames by HeyGen** (hosted) | HeyGen's cloud HyperFrames projects and renders | Connected, no projects. Its `compose` and `render_video` refuse Claude Code by design; in Claude Code use the local `hyperframes` plugin from `tools/hyperframes.sh` |
 | **Webflow** | Build and manage Webflow sites | Connected, not exercised: Adam's sites are Next.js |
+| **Apify** | Run any Apify Store Actor: Google Maps places and photos, plus Instagram, Facebook, Yelp, TikTok and other scrapers. Tools appear as `mcp__apify__*` (`search-actors`, `fetch-actor-details`, `call-actor`, `get-dataset-items`, `apify--web-fetch`, `apify--rag-web-browser`) | Added 2026-10-28 (custom connector, URL `https://mcp.apify.com`, OAuth with Adam's Apify account). **Bronze tier**, pay per use. Details below |
 
-Spending connectors (Higgsfield, TinyFish, 21st AI credits) cost money or
+Spending connectors (Higgsfield, TinyFish, 21st AI credits, Apify) cost money or
 credits per use; say what a run will cost before starting one.
+
+**Apify notes** (verified 2026-10-28):
+
+- **Google Maps** is the Actor `compass/crawler-google-places` (Google Maps
+  Scraper, 4.7 stars, ~670k users). Bronze-tier prices: $0.003 per place,
+  $0.0005 per image, $0.002 per place for contact enrichment (emails/socials
+  from the business's site), $0.0005 per review. A place with 10 photos is
+  about $0.01.
+- Tested: `call-actor` with
+  `{"searchStringsArray": ["El Portal Sedona Hotel"], "locationQuery": "Sedona, Arizona", "maxCrawledPlacesPerSearch": 1, "maxImages": 8, "language": "en"}`
+  succeeded in 28 s and returned address, phone, website, rating, `placeId`,
+  `imageCategories` (Exterior, Rooms, By owner, From visitors…) and 8
+  `imageUrls` at 1920×1080 (`=w1920-h1080` suffix). Read results with
+  `get-dataset-items` and a `fields` list to keep the output small.
+- `callOptions.maxTotalChargeUsd` must be **at least $0.50** (Apify refuses
+  lower); it is a cap, not a charge.
+- Check an Actor's input schema with `fetch-actor-details` before the first
+  call; field names change between versions.
+- Up to ~20 names can go in one `searchStringsArray` run; match results back
+  by name and address.
+- Use for: filling SedonaPassport (and other directory) listings with photos
+  when the business's own site has too few; food-truck and business lead
+  lists. Instagram/TikTok scraping Actors also exist in the Store.
 
 ---
 

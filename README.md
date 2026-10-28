@@ -119,7 +119,8 @@ upload those files instead.
 ## claude.ai connectors
 
 Some tools come from Claude account connectors instead of this repo: 21st Dev,
-Figma, Higgsfield, Descript, TinyFish, HyperFrames by HeyGen and Webflow. They
+Figma, Higgsfield, Descript, TinyFish, HyperFrames by HeyGen, Webflow and
+Apify (Google Maps places and photos, and other scrapers). They
 reach every session on their own. CLAUDE.md lists each with its plan limits.
 
 ## Prompts
