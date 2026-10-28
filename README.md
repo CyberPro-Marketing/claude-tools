@@ -93,6 +93,17 @@ streaming) and **fal.ai** (image, video and 3D models) MCPs. About 4 seconds
 at session start. Mux needs a token saved in the environment's settings; fal signs in through `/mcp` when first used. See
 CLAUDE.md.
 
+### instagram-grab
+
+Paste a partner's Instagram post or reel link and Claude saves it: every
+image full size, reels with their sound, the caption, account and date, plus a
+ready-to-post caption crediting the partner. Files go into a folder per
+partner and, once Dropbox is connected, to `Dropbox/…/Partner Content/<partner>/`.
+It can also pull a partner's latest posts. Scraping runs on Apify (the
+claude.ai connector, about $0.0023 a post). Dropbox needs three values in the
+environment's variables; the `instagram-grab` skill walks through getting
+them. Under a second at session start.
+
 ### rea
 
 [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything"): lets

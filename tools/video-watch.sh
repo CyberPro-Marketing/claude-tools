@@ -120,7 +120,9 @@ For a longer video or a precise moment, take frames yourself:
 
 - From these cloud sessions, **Facebook and Archive.org work. YouTube,
   Instagram, TikTok and Vimeo usually refuse** the session's data-centre
-  address. Say so plainly and ask the user to upload the file instead. **Never
+  address. Say so plainly and ask the user to upload the file instead. (For a
+  partner's Instagram post or reel, the `instagram-grab` skill gets it through
+  Apify.) **Never
   use cookies, logins or passwords** to get past a refusal; that risks the
   user's accounts and breaks the site's terms.
 - Watching to summarise, research or learn is fine. Reusing someone else's

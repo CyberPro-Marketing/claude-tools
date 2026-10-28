@@ -79,6 +79,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 |---|---|---|
 | **find-skills** (`tools/find-skills.sh`) | Vercel's [find-skills](https://github.com/vercel-labs/skills) skill (MIT, 4.1M installs on skills.sh), pinned to commit `533c7df`: when Adam asks "is there a skill for X", Claude searches skills.sh with `npx skills find`, checks installs, source and stars, and recommends. One local rule is appended to it: recommend freely, **ask before installing**, and send lasting additions through this repo | ~1 s fresh, 0 s repeat, measured 2026-10-27 |
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
+| **instagram-grab** (`tools/instagram-grab.sh`) | Saves a partner's Instagram post or reel for reposting and their content library. `/usr/local/bin/ig-grab <Apify dataset id> --partner "Name"` downloads every carousel slide full size, reels with video and sound merged (Instagram serves them separately; ffmpeg joins them), and writes `caption.txt`, `repost.txt` (caption + `📸 @handle`) and `info.json` into `<partner>/<date>_<handle>_<code>/`; uploads to Dropbox `/Partner Content/…` when the Dropbox keys are set. Scraping is the Apify connector's `apify/instagram-scraper` (~$0.0023 a post), steered by the `instagram-grab` skill. Python standard library only | ~0 s fresh and repeat, measured 2026-10-28 |
 | **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
 | **video-watch** (`tools/video-watch.sh`) | Lets Claude watch a video. [yt-dlp](https://github.com/yt-dlp/yt-dlp) (public domain) in `/opt/yt-dlp-venv`, linked at `/usr/local/bin/yt-dlp`, set to `--js-runtimes node`, upgraded when its release is over 14 days old (not pinned: sites change and old releases stop working). `/usr/local/bin/watch-video <link or file> [folder]` downloads (720p max), transcribes with whisper-cli and takes 12 frames plus a contact sheet. A `watch-video` skill says when to use it and its limits | ~13 s fresh, ~1 s repeat, measured 2026-10-27 |
@@ -199,6 +200,33 @@ To update: bump `REA_VERSION` in `tools/rea.sh`, rerun the tests above, push.
   search for remote-job skills found `firecrawl/skills@firecrawl-job-postings`,
   611 installs, which needs a paid Firecrawl key; Adam chose to hold, not
   installed). Expect the check to ask for approval now and then.
+
+**instagram-grab** (added 2026-10-28), for partners who have agreed to be
+reposted (Adam's paying advertisers). Instagram refuses these sessions
+directly, so scraping runs on Apify; nothing logs in to Instagram.
+
+- Tested: `apify/instagram-scraper` with `directUrls` of a post and a reel
+  (`resultsType: "posts"`, `resultsLimit: 1`) returned both in 5.5 s. Then
+  `ig-grab <dataset id> --partner "El Portal Sedona"` saved a 4-slide carousel
+  (1080×1350 JPEGs) and a 10 s reel (720×900 H.264 with its AAC audio merged
+  in, plus a 1080×1350 cover) in 9 s.
+- Apify run datasets are readable by id without a token (verified), which is
+  how `ig-grab` fetches the media links without Claude copying them; it uses
+  `APIFY_TOKEN` if one is set.
+- Instagram's media links carry an expiry (`oe=` parameter, a few days), so
+  grab right after scraping.
+- **Dropbox** uses the official API with an app's key, secret and a refresh
+  token in the environment's **Environment variables** (`DROPBOX_APP_KEY`,
+  `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN`); Dropbox no longer issues
+  long-lived access tokens, so a fixed Network secret would expire after
+  4 hours. `ig-grab dropbox-auth` prints the sign-in link and trades the code
+  for the refresh token; `ig-grab dropbox-check` confirms it. The three Dropbox
+  hosts answer from these sessions (400 without credentials, 2026-10-28).
+  **Not yet tested with real Dropbox keys.** The claude.ai Dropbox connector
+  cannot do this: it only creates text files.
+- A version for Orion (so the marketing agent Conner can use it) is built in
+  the Orion repo by its own session, from a prompt Adam was given; this repo's
+  tool is for Claude Code sessions on any project.
 
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
