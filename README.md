@@ -114,6 +114,22 @@ About 1 second at session start; REA downloads when first used.
 **Compiled programs need Ghidra**, which is too big for every session. Ask
 Claude to "set up Ghidra" in the session that needs it (about 35 seconds).
 
+### crawl-site
+
+Claude can read a whole website, not just one page, with Crawl4AI: for
+studying a competitor, auditing your own site's content and SEO, or collecting
+a business's details. It installs itself the first time a session needs it
+(about 40 seconds).
+
+### skill-picks
+
+A few hand-picked skills from two large collections: market research reports,
+sales forecasting from past numbers, turning PDFs and Office files into text,
+and eight security checks for your own sites, domains and code (headers,
+SSL, email authentication, leaked secrets, risky npm packages, API security,
+scanner triage, lookalike domains). The security skills are for your own
+systems only.
+
 ### find-skills
 
 Vercel's skill finder: ask "is there a skill for X" and Claude searches the

@@ -77,11 +77,13 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 
 | Tool | What it gives every session | Startup cost (fresh container) |
 |---|---|---|
+| **crawl-site** (`tools/crawl-site.sh`) | A `crawl-site` skill for reading a whole website as clean Markdown with [Crawl4AI](https://github.com/unclecode/crawl4ai) (Apache-2.0). Crawl4AI itself is **on demand** (`on-demand/crawl4ai.sh`, ~40 s), installed the first time a session needs it | 0 s, measured 2026-11-04 |
 | **find-skills** (`tools/find-skills.sh`) | Vercel's [find-skills](https://github.com/vercel-labs/skills) skill (MIT, 4.1M installs on skills.sh), pinned to commit `533c7df`: when Adam asks "is there a skill for X", Claude searches skills.sh with `npx skills find`, checks installs, source and stars, and recommends. One local rule is appended to it: recommend freely, **ask before installing**, and send lasting additions through this repo | ~1 s fresh, 0 s repeat, measured 2026-10-27 |
 | **hyperframes** (`tools/hyperframes.sh`) | HeyGen's [HyperFrames](https://github.com/heygen-com/hyperframes): write HTML, render MP4 video. The Claude Code plugin (`/hyperframes` and its skills), `whisper-cli` for transcription and captions, Kokoro for local voice, MusicGen for local background music, all pointed at the container's own headless Chromium | ~2 min 46 s and ~1.5 GB, measured 2026-10-06; a repeat run is ~5 s. Most of it is MusicGen; `CLAUDE_TOOLS_SKIP=musicgen` brings it under a minute |
 | **instagram-grab** (`tools/instagram-grab.sh`) | Saves a partner's Instagram post or reel for reposting and their content library. `/usr/local/bin/ig-grab <Apify dataset id> --partner "Name"` downloads every carousel slide full size, reels with video and sound merged (Instagram serves them separately; ffmpeg joins them), and writes `caption.txt`, `repost.txt` (caption + `📸 @handle`) and `info.json` into `<partner>/<date>_<handle>_<code>/`; uploads to Dropbox `/Partner Content/…` when the Dropbox keys are set. Scraping is the Apify connector's `apify/instagram-scraper` (~$0.0023 a post), steered by the `instagram-grab` skill. Python standard library only | ~0 s fresh and repeat, measured 2026-10-28 |
 | **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
+| **skill-picks** (`tools/skill-picks.sh`) | Hand-picked skills, each collection pinned to a commit and fetched sparsely (only the chosen folders). From [K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills) (MIT, `a25cf9e`): `market-research-reports`, `timesfm-forecasting` (with a rule to use the Apache-licensed TimesFM 2.5 weights), `markitdown`. From [mukul975/Anthropic-Cybersecurity-Skills](https://github.com/mukul975/Anthropic-Cybersecurity-Skills) (Apache-2.0, `54a7988`; independent, not made by Anthropic): security-headers audit, SSL/TLS assessment, DMARC/DKIM/SPF, Gitleaks secret scanning, malicious npm packages, OWASP API Top 10, web vulnerability triage, typosquatting domains, each with a rule appended: **Adam's own systems only, passive checks first, ask before any active test** | ~2 s fresh, 0 s repeat, measured 2026-11-04 |
 | **video-watch** (`tools/video-watch.sh`) | Lets Claude watch a video. [yt-dlp](https://github.com/yt-dlp/yt-dlp) (public domain) in `/opt/yt-dlp-venv`, linked at `/usr/local/bin/yt-dlp`, set to `--js-runtimes node`, upgraded when its release is over 14 days old (not pinned: sites change and old releases stop working). `/usr/local/bin/watch-video <link or file> [folder]` downloads (720p max), transcribes with whisper-cli and takes 12 frames plus a contact sheet. A `watch-video` skill says when to use it and its limits | ~13 s fresh, ~1 s repeat, measured 2026-10-27 |
 | **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 | **web-premium** (`tools/web-premium.sh`) | The high-end layer for client sites. **gsap-skills** plugin (GreenSock's 8 official skills: core, timeline, ScrollTrigger, plugins, utils, React, performance, frameworks; GSAP and every plugin are free for commercial use). 21st.dev's `21st-ui` skill pinned to commit `6b5299e` (the 21st MCP itself is Adam's claude.ai connector, "21st Dev"). **magicui** MCP (Magic UI's animated components). Hosted **mux** MCP (video upload and streaming) and **fal** MCP (image, video and 3D models, pay per run) | ~4 s fresh, ~2 s repeat, measured 2026-10-24 |
@@ -228,6 +230,15 @@ directly, so scraping runs on Apify; nothing logs in to Instagram.
   the Orion repo by its own session, from a prompt Adam was given; this repo's
   tool is for Claude Code sessions on any project.
 
+- crawl-site and skill-picks (2026-11-04): Crawl4AI 0.9.5 read adambossin.com
+  (one page ~13 s on first run; an 8-page `--deep-crawl bfs` in ~8 s).
+  `performing-security-headers-audit`'s script graded adambossin.com **C**
+  (CSP present only as report-only; HSTS without includeSubDomains). Why only
+  picks: every installed skill adds its description to every session, and the
+  two collections hold 177 and 818. Left out on purpose: Browser Use (Playwright
+  and Claude in Chrome cover it; its pitch is stealth browsing past bot checks)
+  and the offensive skills in the security collection.
+
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
 a larger for-profit company using it commercially needs a paid company
@@ -295,7 +306,8 @@ credits per use; say what a run will cost before starting one.
 
 `on-demand/` holds installers that are too big for every session start.
 `setup.sh` never runs them; a skill installed by a `tools/` script tells
-Claude when and how. Currently: `ghidra.sh` (via the `ghidra-setup` skill).
+Claude when and how. Currently: `ghidra.sh` (via the `ghidra-setup` skill)
+and `crawl4ai.sh` (via the `crawl-site` skill).
 
 ---
 
@@ -392,6 +404,13 @@ Things learned by being refused, so the next tool does not rediscover them:
 - **GitHub release downloads and web pages are blocked** for repos not attached
   to the session (403 from the proxy; `add_repo` grants git reads only). Find
   another published source for prebuilt binaries, as `on-demand/ghidra.sh` does.
+- **Python Playwright must match the preinstalled Chromium.** The container
+  has Chromium build 1194, which is Playwright 1.56.0; a newer Playwright looks
+  for a newer build and fails ("Executable doesn't exist ... chromium_headless_shell-1248").
+  Pin Playwright to the matching release instead of downloading browsers. Each
+  release's `driver/package/browsers.json` names its build.
+- **`uv` is installed** (`~/.local/bin/uv`) and installs Python packages about
+  twice as fast as pip (Crawl4AI: 39 s against 71 s).
 - **Java 21 (OpenJDK) is already installed.**
 - **Already present:** Node 22, Python 3.13, ffmpeg/ffprobe, git, cmake, gcc,
   Docker (installed, not running), the `claude` CLI.
