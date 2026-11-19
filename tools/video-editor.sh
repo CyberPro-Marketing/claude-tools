@@ -12,6 +12,8 @@
 #   - /usr/local/bin/footage-intake: look at everything in a folder at once
 #     (facts, contact sheets, transcripts) and convert phone footage (HEVC,
 #     HDR, HEIC photos) into files every tool reads.
+#   - /usr/local/bin/dropbox-files: pull a job's folder from Dropbox and push the
+#     finished video back (official API; keys come from the environment).
 #   - /usr/local/bin/video-finish: master loudness, web-ready encode, and a
 #     measured QC report with a contact sheet.
 #   - a video-editor skill: the house workflow and the rules of a clean cut.
@@ -273,7 +275,196 @@ ffmpeg -hide_banner -loglevel error -y -i "$out" -vf "fps=1/$step,scale=480:-2,t
 echo "frames: ${out%.*}.qc.jpg  (look at it before delivering)"
 SH
 chmod 0755 /usr/local/bin/video-finish
-log "footage-intake and video-finish ready"
+# 3b. dropbox-files: pull a Dropbox folder, push finished files back.
+cat > /usr/local/bin/dropbox-files <<'PY'
+#!/usr/bin/env python3
+"""dropbox-files: move files between a cloud session and Dropbox.
+
+  dropbox-files check                      confirm the connection, show the account
+  dropbox-files ls [/folder]               list a folder
+  dropbox-files pull </folder> <local dir> download every file in a folder
+                                           (skips names starting FINAL and files
+                                           already downloaded at the same size)
+  dropbox-files push <file>... </folder>   upload files (any size), keeping
+                                           earlier versions: a taken name gets (1)
+  dropbox-files auth --app-key KEY         first-time set-up: print the sign-in link
+  dropbox-files auth <code>                trade the code Dropbox shows for a token
+
+Reads DROPBOX_APP_KEY and DROPBOX_REFRESH_TOKEN (and DROPBOX_APP_SECRET if the
+token was made with one) from the environment, else from
+~/.config/dropbox-files/credentials.json, which `auth` writes for this session.
+With an "App folder" Dropbox app, "/" is Dropbox/Apps/<app name>/.
+"""
+import base64, hashlib, json, os, pathlib, secrets, sys, urllib.error, urllib.parse, urllib.request
+
+CFG = pathlib.Path.home() / ".config/dropbox-files"
+CRED, PENDING = CFG / "credentials.json", CFG / "pending.json"
+API, CONTENT, OAUTH = "https://api.dropboxapi.com/2/", "https://content.dropboxapi.com/2/", "https://api.dropbox.com/oauth2/token"
+CHUNK = 64 * 1024 * 1024
+
+
+def die(msg):
+    print(f"dropbox-files: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def http(url, data=None, headers=None, timeout=900):
+    req = urllib.request.Request(url, data=data, headers={"User-Agent": "dropbox-files", **(headers or {})}, method="POST")
+    try:
+        return urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as e:
+        die(f"Dropbox answered {e.code}: {e.read().decode(errors='replace')[:300]}")
+
+
+def creds():
+    c = {k: os.environ.get(k, "").strip() for k in ("DROPBOX_APP_KEY", "DROPBOX_APP_SECRET", "DROPBOX_REFRESH_TOKEN")}
+    if not (c["DROPBOX_APP_KEY"] and c["DROPBOX_REFRESH_TOKEN"]) and CRED.exists():
+        c.update(json.loads(CRED.read_text()))
+    if not (c.get("DROPBOX_APP_KEY") and c.get("DROPBOX_REFRESH_TOKEN")):
+        die("Dropbox is not connected: DROPBOX_APP_KEY and DROPBOX_REFRESH_TOKEN are not set. See the video-editor skill, 'Connecting Dropbox'.")
+    return c
+
+
+_tok = None
+
+
+def token():
+    global _tok
+    if not _tok:
+        c = creds()
+        body = {"grant_type": "refresh_token", "refresh_token": c["DROPBOX_REFRESH_TOKEN"], "client_id": c["DROPBOX_APP_KEY"]}
+        if c.get("DROPBOX_APP_SECRET"):
+            body["client_secret"] = c["DROPBOX_APP_SECRET"]
+        _tok = json.load(http(OAUTH, urllib.parse.urlencode(body).encode()))["access_token"]
+    return _tok
+
+
+def rpc(endpoint, arg):
+    data = b"null" if arg is None else json.dumps(arg).encode()
+    return json.load(http(API + endpoint, data, {"Authorization": f"Bearer {token()}", "Content-Type": "application/json"}))
+
+
+def norm(path):
+    path = "/" + path.strip().strip("/")
+    return "" if path == "/" else path
+
+
+def listing(path):
+    r = rpc("files/list_folder", {"path": norm(path), "limit": 2000})
+    items = r["entries"]
+    while r["has_more"]:
+        r = rpc("files/list_folder/continue", {"cursor": r["cursor"]})
+        items += r["entries"]
+    return items
+
+
+def cmd_ls(path="/"):
+    for e in sorted(listing(path), key=lambda e: (e[".tag"] != "folder", e["name"].lower())):
+        print(f"{'[folder]' if e['.tag'] == 'folder' else format(e.get('size', 0) / 1e6, '8.1f') + ' MB'}  {e['name']}")
+
+
+def cmd_pull(path, local):
+    local = pathlib.Path(local)
+    local.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for e in listing(path):
+        if e[".tag"] != "file" or e["name"].upper().startswith("FINAL"):
+            continue
+        dst = local / e["name"]
+        if dst.exists() and dst.stat().st_size == e["size"]:
+            print(f"have  {e['name']}")
+            continue
+        arg = json.dumps({"path": e["id"]})
+        with http(CONTENT + "files/download", None, {"Authorization": f"Bearer {token()}", "Dropbox-API-Arg": arg}) as r, open(dst, "wb") as f:
+            while chunk := r.read(8 * 1024 * 1024):
+                f.write(chunk)
+        if dst.stat().st_size != e["size"]:
+            die(f"{e['name']} came down incomplete ({dst.stat().st_size} of {e['size']} bytes)")
+        n += 1
+        print(f"got   {e['name']}  ({e['size'] / 1e6:.1f} MB)")
+    print(f"{n} file(s) downloaded to {local}")
+
+
+def ascii_arg(obj):
+    # HTTP headers are Latin-1: escape anything beyond ASCII, as Dropbox asks.
+    return json.dumps(obj, ensure_ascii=True)
+
+
+def cmd_push(files, folder):
+    for f in map(pathlib.Path, files):
+        if not f.is_file():
+            die(f"no such file: {f}")
+        size, dest = f.stat().st_size, f"{norm(folder)}/{f.name}"
+        commit = {"path": dest, "mode": "add", "autorename": True, "mute": False}
+        hdr = {"Authorization": f"Bearer {token()}", "Content-Type": "application/octet-stream"}
+        with open(f, "rb") as fh:
+            if size <= CHUNK:
+                r = json.load(http(CONTENT + "files/upload", fh.read(), {**hdr, "Dropbox-API-Arg": ascii_arg(commit)}))
+            else:
+                sid = json.load(http(CONTENT + "files/upload_session/start", fh.read(CHUNK), {**hdr, "Dropbox-API-Arg": "{}"}))["session_id"]
+                off = CHUNK
+                while size - off > CHUNK:
+                    http(CONTENT + "files/upload_session/append_v2", fh.read(CHUNK),
+                         {**hdr, "Dropbox-API-Arg": ascii_arg({"cursor": {"session_id": sid, "offset": off}})})
+                    off += CHUNK
+                r = json.load(http(CONTENT + "files/upload_session/finish", fh.read(),
+                                   {**hdr, "Dropbox-API-Arg": ascii_arg({"cursor": {"session_id": sid, "offset": off}, "commit": commit})}))
+        if r.get("size") != size:
+            die(f"{f.name}: Dropbox has {r.get('size')} bytes, expected {size}")
+        print(f"uploaded {r['path_display']}  ({size / 1e6:.1f} MB)")
+
+
+def cmd_auth(argv):
+    CFG.mkdir(parents=True, exist_ok=True)
+    os.chmod(CFG, 0o700)
+    if argv and argv[0] == "--app-key":
+        key = argv[1].strip()
+        verifier = secrets.token_urlsafe(64)
+        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+        PENDING.write_text(json.dumps({"key": key, "verifier": verifier}))
+        os.chmod(PENDING, 0o600)
+        print("Open this link, click Allow, and copy the code Dropbox shows:\n")
+        print("https://www.dropbox.com/oauth2/authorize?" + urllib.parse.urlencode({
+            "client_id": key, "response_type": "code", "token_access_type": "offline",
+            "code_challenge": challenge, "code_challenge_method": "S256"}))
+        print("\nThen: dropbox-files auth <code>")
+        return
+    if not argv or not PENDING.exists():
+        die("start with: dropbox-files auth --app-key <App key>")
+    p = json.loads(PENDING.read_text())
+    r = json.load(http(OAUTH, urllib.parse.urlencode({"code": argv[0].strip(), "grant_type": "authorization_code",
+                                                       "client_id": p["key"], "code_verifier": p["verifier"]}).encode()))
+    CRED.write_text(json.dumps({"DROPBOX_APP_KEY": p["key"], "DROPBOX_REFRESH_TOKEN": r["refresh_token"]}, indent=2) + "\n")
+    os.chmod(CRED, 0o600)
+    PENDING.unlink()
+    print(f"Connected for this session. The two values to save in the environment are in {CRED}")
+    print("(do not print the refresh token into the chat).")
+
+
+def main():
+    a = sys.argv[1:]
+    if not a or a[0] in ("-h", "--help"):
+        sys.exit(__doc__)
+    if a[0] == "auth":
+        cmd_auth(a[1:])
+    elif a[0] == "check":
+        acct = rpc("users/get_current_account", None)
+        print("Dropbox OK:", acct["name"]["display_name"])
+        cmd_ls("/")
+    elif a[0] == "ls":
+        cmd_ls(a[1] if len(a) > 1 else "/")
+    elif a[0] == "pull" and len(a) == 3:
+        cmd_pull(a[1], a[2])
+    elif a[0] == "push" and len(a) >= 3:
+        cmd_push(a[1:-1], a[-1])
+    else:
+        sys.exit(__doc__)
+
+
+main()
+PY
+chmod 0755 /usr/local/bin/dropbox-files
+log "footage-intake, video-finish and dropbox-files ready"
 
 # 4. The skill.
 mkdir -p "$SKILLS/video-editor"
@@ -303,11 +494,17 @@ you only see frames you extract, so **measure and look; never assume**.
 
 ## 1. Get the footage
 
-- **Dropbox** (best for big files): find the files with `mcp__Dropbox__search`
-  or `list_folder`, get links with `mcp__Dropbox__download_link` (up to 25 per
+- **Dropbox, the usual way**: each job is a folder in the editing folder
+  (`Dropbox/Apps/<app name>/<job>/` with an App-folder app, where `/` below
+  is that app folder). `dropbox-files ls /` shows the jobs;
+  `dropbox-files pull "/<job>" ~/video-jobs/<job>/footage` downloads every
+  file in it (it skips earlier `FINAL...` uploads).
+- **Dropbox, anywhere else in the account** (or if `dropbox-files check` says
+  it is not connected): find the files with `mcp__Dropbox__search` or
+  `list_folder`, get links with `mcp__Dropbox__download_link` (up to 25 per
   call), and download each with `curl -fsSL -o <name> "<url>"` straight away.
   Each link works **once** and expires in 10 minutes: no HEAD, no retry on the
-  same link.
+  same link. This route can download but cannot upload.
 - **Uploaded in the chat**: copy the files into the job folder.
 - **A public link**: `yt-dlp` or `curl`. Never cookies or logins.
 - Put everything in one job folder, `~/video-jobs/<short-name>/footage/`, and
@@ -420,7 +617,12 @@ its skill for the format, its check and its review. On top of that:
 5. Up to three fix-and-check rounds, then deliver anyway and list what is
    still not right.
 
-Deliver the file with SendUserFile (`display: render`) and say in a few lines:
+Name the file `FINAL - <job> - <shape> v1.mp4` (v2, v3 for revisions) and
+upload it to the job's own Dropbox folder:
+`dropbox-files push "FINAL - <job> - 9x16 v1.mp4" "/<job>"`. It never
+overwrites: Dropbox keeps every version. Also send it with SendUserFile
+(`display: render`). If Dropbox is not connected, say so and send the file in
+the chat only. Then say in a few lines:
 length, shape, what is in it, what you left out and why, any music or licence
 note, and what you could not check (you cannot hear it: give the numbers).
 Offer the other shapes if they would help.
@@ -432,6 +634,25 @@ project, then a new render with a new file name (`-v2`). Never re-transcribe
 or re-convert what is already in `_intake/`. The container is wiped when the
 session ends: tell the user the final files are theirs to save, and that the
 source footage should stay in Dropbox so a later session can rebuild.
+
+## Connecting Dropbox (once per environment)
+
+Only the user can do steps 1 and 4. Never print the refresh token in the chat.
+
+1. The user creates a Dropbox app: dropbox.com/developers/apps, Create app,
+   Scoped access, **App folder**, a name (for example "Claude Video Editor").
+   On the **Permissions** tab tick `files.metadata.read`, `files.content.read`
+   and `files.content.write`, then Submit. On **Settings** copy the **App key**
+   (not the secret; it is not needed).
+2. `dropbox-files auth --app-key <App key>` prints a link. The user opens it,
+   clicks Allow, and pastes back the code Dropbox shows (single use).
+3. `dropbox-files auth <code>`, then `dropbox-files check`. Dropbox now works
+   for this session.
+4. For every later session, the user saves two **Environment variables** in
+   the environment (session title bar, environment menu, Edit):
+   `DROPBOX_APP_KEY` and `DROPBOX_REFRESH_TOKEN`, copied from
+   `~/.config/dropbox-files/credentials.json` (copy that file to the
+   scratchpad so they can open it; delete the copy afterwards).
 
 ## Rights
 

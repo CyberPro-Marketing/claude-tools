@@ -68,13 +68,14 @@ def slug(s, n=60):
 # ---------- Dropbox ----------
 def dbx_env():
     k, s, t = (os.environ.get(x, "").strip() for x in ("DROPBOX_APP_KEY", "DROPBOX_APP_SECRET", "DROPBOX_REFRESH_TOKEN"))
-    return (k, s, t) if k and s and t else None
+    return (k, s, t) if k and t else None
 
 def dbx_token():
     k, s, t = dbx_env()
-    body = urllib.parse.urlencode({"grant_type": "refresh_token", "refresh_token": t,
-                                   "client_id": k, "client_secret": s}).encode()
-    return json.loads(http("https://api.dropbox.com/oauth2/token", body))["access_token"]
+    f = {"grant_type": "refresh_token", "refresh_token": t, "client_id": k}
+    if s:  # tokens made by `dropbox-files auth` (PKCE) need no secret
+        f["client_secret"] = s
+    return json.loads(http("https://api.dropbox.com/oauth2/token", urllib.parse.urlencode(f).encode()))["access_token"]
 
 def dbx_upload(token, local, remote):
     size = os.path.getsize(local)
@@ -104,7 +105,7 @@ def dropbox_auth(argv):
 
 def dropbox_check():
     if not dbx_env():
-        die("Dropbox keys not set: DROPBOX_APP_KEY, DROPBOX_APP_SECRET, DROPBOX_REFRESH_TOKEN")
+        die("Dropbox keys not set: DROPBOX_APP_KEY and DROPBOX_REFRESH_TOKEN")
     tok = dbx_token()
     acct = json.loads(http("https://api.dropboxapi.com/2/users/get_current_account", b"null",
                            {"Authorization": f"Bearer {tok}", "Content-Type": "application/json"}, "POST"))
