@@ -136,6 +136,19 @@ Vercel's skill finder: ask "is there a skill for X" and Claude searches the
 skills.sh directory, checks quality, and recommends. It asks before installing
 anything; tools you want in every session still come through this repo.
 
+### video-editor
+
+Claude as the company video editor: send clips and photos (a Dropbox folder is
+easiest), get back a finished video with cuts, titles, transitions, captions,
+music and a balanced sound mix, in the shape each platform wants. Adds
+[Kinocut](https://github.com/KyaniteLabs/kinocut) (a local editing engine for
+AI agents: trim, merge, remove silences, stabilise, loudness, quality checks),
+`footage-intake` (looks at everything sent and converts iPhone HEVC/HDR video
+and HEIC photos), `video-finish` (masters the sound and checks the result) and
+a `video-editor` skill with the workflow. The edit itself is built with
+HyperFrames. About 3 seconds at session start. Start a session with
+[`prompts/video-edit.md`](prompts/video-edit.md).
+
 ### video-watch
 
 Claude can watch a video: `watch-video <link or file>` downloads it,

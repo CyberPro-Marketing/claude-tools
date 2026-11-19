@@ -84,6 +84,7 @@ setup line (`... | CLAUDE_TOOLS_SKIP=musicgen bash`):
 | **rea** (`tools/rea.sh`) | [REA](https://github.com/morluto/rea) ("Reverse Engineer Anything", MIT): an MCP server (`rea`, pinned `rea-agents@6.7.0` via npx) and its `reverse-engineer-anything` skill, for taking apart software without its source: websites (attaches to a Chromium over CDP), JavaScript/Electron apps, Go/Rust/WASM/SQLite and many other formats, and compiled programs once Ghidra is added. Also a `ghidra-setup` skill that tells any session how to add Ghidra on demand, and `MCP_TIMEOUT=90000` | ~1 s, measured 2026-10-22. REA itself (~250 MB with dependencies) downloads through npx when Claude starts the server: ~27 s on a fresh container |
 | **remotion** (`tools/remotion.sh`) | Remotion's official Claude Code plugin: 12 skills (`remotion-create`, `remotion-best-practices`, `remotion-render`, `remotion-captions`, `remotion-maps`, …) for building videos and stills in React and rendering them to MP4 or PNG. Remotion itself is a per-project npm dependency that `npx create-video` adds, so it costs nothing until a session makes a Remotion project | ~4 s fresh, ~0 s repeat, measured 2026-10-08. A project's first render downloads Remotion's own headless Chrome (~236 MB, a few seconds) |
 | **skill-picks** (`tools/skill-picks.sh`) | Hand-picked skills, each collection pinned to a commit and fetched sparsely (only the chosen folders). From [K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills) (MIT, `a25cf9e`): `market-research-reports`, `timesfm-forecasting` (with a rule to use the Apache-licensed TimesFM 2.5 weights), `markitdown`. From [mukul975/Anthropic-Cybersecurity-Skills](https://github.com/mukul975/Anthropic-Cybersecurity-Skills) (Apache-2.0, `54a7988`; independent, not made by Anthropic): security-headers audit, SSL/TLS assessment, DMARC/DKIM/SPF, Gitleaks secret scanning, malicious npm packages, OWASP API Top 10, web vulnerability triage, typosquatting domains, each with a rule appended: **Adam's own systems only, passive checks first, ask before any active test** | ~2 s fresh, 0 s repeat, measured 2026-11-04 |
+| **video-editor** (`tools/video-editor.sh`) | Makes Claude a video editor for Adam's own clips and photos. [Kinocut](https://github.com/KyaniteLabs/kinocut) (Apache-2.0, formerly mcp-video), pinned `2.0.1` in `/opt/kinocut-venv`: CLI `kino` and MCP server `kinocut` for trimming, merging, silence removal, stabilising, scene detection, loudness and quality gates. `/usr/local/bin/footage-intake <folder> --conform` (inventory, contact sheets, word-timed transcripts; converts HEVC/HDR/10-bit video and HEIC photos to files every tool reads). `/usr/local/bin/video-finish in.mp4 out.mp4` (two-pass loudness to -14 LUFS, web-ready H.264, measured QC report and contact sheet). A `video-editor` skill with the house workflow; the edit itself is built in HyperFrames | ~3 s fresh and 93 MB, ~1 s repeat, measured 2026-11-19 |
 | **video-watch** (`tools/video-watch.sh`) | Lets Claude watch a video. [yt-dlp](https://github.com/yt-dlp/yt-dlp) (public domain) in `/opt/yt-dlp-venv`, linked at `/usr/local/bin/yt-dlp`, set to `--js-runtimes node`, upgraded when its release is over 14 days old (not pinned: sites change and old releases stop working). `/usr/local/bin/watch-video <link or file> [folder]` downloads (720p max), transcribes with whisper-cli and takes 12 frames plus a contact sheet. A `watch-video` skill says when to use it and its limits | ~13 s fresh, ~1 s repeat, measured 2026-10-27 |
 | **web-design** (`tools/web-design.sh`) | For building websites. From Anthropic's official plugin directory: **frontend-design** (Anthropic's skill for distinctive, non-generic design), **modern-web-guidance** (Google Chrome's current web practices), **playwright** (Microsoft's browser MCP: open, click, screenshot) **chrome-devtools-mcp** (Google's: Lighthouse audits, performance traces, network and console) and **context7** (current library docs; needs the Context7 network secret). Plus the **shadcn/ui MCP** (search and add components) at user scope, and a Chrome launcher at `/opt/google/chrome/chrome` that both browser MCPs need | ~12 s fresh, ~2 s repeat, measured 2026-10-10. Each MCP's npm package downloads on first use |
 | **web-premium** (`tools/web-premium.sh`) | The high-end layer for client sites. **gsap-skills** plugin (GreenSock's 8 official skills: core, timeline, ScrollTrigger, plugins, utils, React, performance, frameworks; GSAP and every plugin are free for commercial use). 21st.dev's `21st-ui` skill pinned to commit `6b5299e` (the 21st MCP itself is Adam's claude.ai connector, "21st Dev"). **magicui** MCP (Magic UI's animated components). Hosted **mux** MCP (video upload and streaming) and **fal** MCP (image, video and 3D models, pay per run) | ~4 s fresh, ~2 s repeat, measured 2026-10-24 |
@@ -239,6 +240,62 @@ directly, so scraping runs on Apify; nothing logs in to Instagram.
   and Claude in Chrome cover it; its pitch is stealth browsing past bot checks)
   and the offensive skills in the security collection.
 
+**video-editor** (added 2026-11-19): Adam sends clips and photos, Claude
+returns a finished video. Tested end to end in this session on public test
+footage (three 1080p clips at 24, 29.97 and 60 fps, a photo, a Kokoro voice
+line, a music track):
+
+- HyperFrames built the edit: title card, lower third, crossfades, a photo
+  with a slow push-in, word-timed captions, music ducked under the voice, end
+  card. 20 s at 1080p rendered in 70 s. HyperFrames is the timeline; nothing
+  else found does titles and motion as well from a headless container.
+- `kino merge` joined the mixed-frame-rate clips with transitions (49 s) and
+  warned about the mismatch; `kino video-ai-remove-silence` cut a 2.5 s pause
+  (9.0 s to 6.2 s); `kino stabilize` ran in 14 s; `kino normalize-audio`
+  moved -22.2 to -16.1 LUFS; `claude mcp list` shows `kinocut` connected.
+- `footage-intake` on 7 files (20 s): flagged a HEVC HLG 10-bit clip and a
+  HEIC photo and converted both, and its transcript put a 2.5 s pause where
+  one had been inserted. **The HDR-to-standard conversion was tested on a
+  synthetic HLG clip only, not a real iPhone file**; the result was correct in
+  colour but darker. Check the first real one and adjust the `tonemap` line.
+- `video-finish`: -21.8 LUFS in, -14.3 LUFS out, peak -1.3 dBFS, 44 MB to
+  24 MB, no black, silent or frozen sections, in 29 s.
+- Getting footage in: the Dropbox connector's `download_link` plus `curl`
+  fetched a 20 MB MP4 in under a second. Getting files out: SendUserFile in
+  the session. The Dropbox connector cannot upload a video; uploading needs
+  the three `DROPBOX_*` variables described under instagram-grab (still unset).
+
+Things learned:
+
+- **`kino resize -a 9:16` pads with black bars**; it does not reframe. A
+  vertical version is rebuilt at 1080x1920 in HyperFrames.
+- **`kino release-checkpoint` is a guide, not a judge**: it scored the finished
+  test edit 69/100 for being "desaturated" because of a snow scene and a misty
+  photo.
+- **Music licensing.** HyperFrames' free music catalog needs a HeyGen sign-in
+  (`npx hyperframes auth login`, per session) and its `heygen` CLI, which is
+  not installed. Local MusicGen's weights are published under a non-commercial
+  licence (CC-BY-NC), so it is for drafts, not client or advertising work. The
+  skill tells Claude to ask for a licensed track or use a paid generation.
+- Kinocut's optional extras (openai-whisper, Demucs stem separation,
+  Real-ESRGAN upscaling) are **not installed**: they pull in PyTorch and
+  whisper-cli already covers transcription. Add on demand if a job needs them.
+
+**Looked at and left out:** Browser Use's
+[video-use](https://github.com/browser-use/video-use) (MIT; a good
+conversation-driven editing skill, but its transcription needs a paid
+ElevenLabs key; its cut rules informed the `video-editor` skill),
+[claude-code-video-toolkit](https://github.com/digitalsamba/claude-code-video-toolkit)
+(MIT; built around Remotion and rented cloud GPUs, 135 MB),
+[pycaps](https://github.com/francozanardi/pycaps) (animated captions;
+HyperFrames' caption styles cover it), and the claude.ai directory's hosted
+editors (Eddie AI, Riverside, Tella, OpusClip, Picsart): each edits inside its
+own paid product, worth adding as a connector only if Adam uses that product.
+Descript, already connected, is the one to use for long talking-head edits.
+
+**Kinocut's version is pinned on purpose** (it released 2.0.1 on 2026-11-10
+and changes fast). To update: bump `KINOCUT_VERSION`, rerun the tests above.
+
 **Remotion's licence is Adam's call, not a technical one.** It is free for
 individuals, non-profits and for-profit companies of **up to 3 employees**;
 a larger for-profit company using it commercially needs a paid company
@@ -316,7 +373,8 @@ and `crawl4ai.sh` (via the `crawl-site` skill).
 `prompts/` holds the prompts Adam pastes into sessions: `website-premium.md`
 (first message of a premium client-site session: warm-up plus the high-end
 standard), `website-warmup.md` (first message of a plain website session) and
-`website-template.md` (the design brief). `setup.sh` never runs anything there. **When a tool is added or removed,
+`website-template.md` (the design brief), and `video-edit.md` (first message of a
+video-editing session). `setup.sh` never runs anything there. **When a tool is added or removed,
 update the tool lists in `website-premium.md` and `website-warmup.md` and the
 HOW TO WORK line in `website-template.md`**, or the warm-up will report a missing tool that was
 removed on purpose, or never ask for a new one.

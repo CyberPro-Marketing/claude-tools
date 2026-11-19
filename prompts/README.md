@@ -9,6 +9,7 @@ anything.
 | [`website-premium.md`](website-premium.md) | First message of a premium client site: the warm-up plus the high-end standard (video hero, GSAP motion, animated components, Lighthouse 90+). Use instead of the warm-up |
 | [`website-warmup.md`](website-warmup.md) | First message of a new website session: checks the tools loaded, loads the design skills, reads the repo, then waits |
 | [`website-template.md`](website-template.md) | Second message: the design brief, with brackets to fill in per site |
+| [`video-edit.md`](video-edit.md) | First message of a video-editing session: checks the editing tools, fetches the footage, looks at all of it, then proposes an edit and waits |
 
 When a tool is added to or removed from `tools/`, update the tool list in
 `website-warmup.md` and the HOW TO WORK line in `website-template.md` to match.

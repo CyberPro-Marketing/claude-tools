@@ -322,7 +322,9 @@ footage-intake ~/video-jobs/<name>/footage --conform
 Read `_intake/inventory.md`, look at every sheet in `_intake/sheets/` and
 `_intake/photos.jpg` with the Read tool, and read every transcript. Phone
 footage is usually HEVC, often HDR, and photos HEIC: **use the copies in
-`_intake/conformed/` whenever the inventory lists one**. For a moment that
+`_intake/conformed/` whenever the inventory lists one**. A converted HDR clip
+can come out darker than it should: compare it with the other clips and lift
+its exposure in the grade if so. For a moment that
 matters, pull frames yourself:
 `ffmpeg -ss 12.5 -i clip.mp4 -frames:v 1 -vf scale=960:-2 f.jpg`.
 
